@@ -36,6 +36,20 @@ UI: `screen_render_post` + `screen_mouse_button_pressed_pre` filtered on `screen
 draw with `native_fill`/`native_text`, hit-test `screen.mouse`, store with `native_set_setting`,
 load once in the `frame` hook. Left click → next version, right click → previous.
 
+## Kicks on real 1.21.11 servers (66f3981, Nov 2026)
+
+- **"Invalid signature for profile public key"**: Horizon sends the chat-session (profile key)
+  packet from `horizon_client::game::remote_chat::Game::update_chat_session`, for 26.3 servers and
+  for the adapter's older-release connections alike. A NoChatReports-style mod fixes it with a
+  cancellable HEAD on that function (`ControlFlow::Break(())` while enabled). It's an internal
+  target, so pin it. Verified joining a 1.21.11 Paper server behind Velocity: no kick.
+- **Don't combine with another protocol adapter mod** (e.g. `viahorizon`): both rewrite the same
+  connection. With `viahorizon 0.8.5-dev` the login stalled at the server's login-finished packet
+  and dropped with "Timed out" after 30 s (reproduced offline by replaying captured Velocity login
+  bytes); the Older Servers mod alone completed the login.
+- **"You are already connected to this proxy!"**: the same account is already online, usually from
+  the Java launcher. Not a Horizon bug; close the other client before testing.
+
 ## Item component layouts that differ (1.21.11 → 26.3)
 
 Read in `horizon_protocol::item::older_layout(kind, r)` per quirk flag (`adapter::ids::quirks()`):

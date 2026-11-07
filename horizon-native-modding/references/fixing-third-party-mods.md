@@ -36,6 +36,28 @@ mod's author) what changed.
 | `E0061 this function takes 7 arguments but 6` at `Game::tooltip_box(batch, atlas, …)` | became a method taking the stack | `game.tooltip_box(batch, Some(stack), x, y, w, h)` |
 | quirk field renamed (`either_holder_song_and_tag_resistance` → `either_holders_and_tag_resistance` on main) | upstream refactor | match the Nightly you build on |
 
+## Builds fine, never fires (66f3981, Nov 2026)
+
+A mod can pass `plan` and the build and still do nothing in game: Horizon stopped calling the
+function it hooks and routes around it. Zero errors in the log is the hint. Before touching the
+helper, grep the callers of the target in the Nightly you build on:
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| x-ray / block filter key does nothing | mesh workers call `Mesher::mesh_reusing` directly; `mesh` is skipped | hook `mesh_reusing` instead |
+| shulker preview shows text only in the creative inventory (survival fine) | creative draws the tooltip with `draw_stack_tooltip_with` | hook `draw_stack_tooltip_with` too |
+
+Verified on 66f3981 in an isolated instance: after re-hooking, the x-ray key hides stone/dirt and
+the creative tooltip shows the item grid.
+
+## Mods silently left out of the build
+
+The launcher builds every enabled mod on one Horizon revision. A mod pinned to a different
+revision is not an error: it lands in `left_out` of the build's `native-mods.json` and simply isn't
+in the game. When a mod "doesn't work", check that list first. One mod pinned to an older Nightly
+(seen with `viahorizon 0.8.5-dev`) can hold the whole build on that Nightly and push newer-pinned
+mods out.
+
 General approach: open the Nightly's definition (`grep -rn "fn <name>\|struct <Name>"`), compare
 with the call in the helper, change the call. Don't rewrite mods wholesale; one-line fixes are easy
 for the author to adopt and for the player to verify.
